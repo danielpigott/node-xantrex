@@ -1,0 +1,20 @@
+{
+    "name": "xantrex",
+    "version" : "0.0.1",
+    "description" : "Library for communicating with Xantrex Inverter",
+    "keywords" : ["xantrex","inverter","serial","solar"],
+    "license" : "MIT",
+    "author" : {
+        "name" : "Daniel Pigott",
+        "email" : "pigottd@gmail.com"
+    }, 
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/danielpigott/xantrex.git"
+    },
+    "preferGlobal": false,
+    "dependencies" : {
+      "lodash" : "2.4.1",
+      "serialport" : "1.4.*"
+    }
+}
