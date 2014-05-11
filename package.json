@@ -16,6 +16,6 @@
     "dependencies" : {
       "lodash" : "2.4.1",
       "serialport" : "1.4.*",
-      "q" : "2.0.*"
+      "q" : "1.0.*"
     }
 }
