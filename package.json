@@ -19,9 +19,12 @@
   },
   "preferGlobal": false,
   "dependencies": {
+    "axios": "^0.17.1",
+    "date-fns": "^1.29.0",
     "lodash": "4.17.*",
+    "node-schedule": "^1.2.5",
     "q": "1.0.*",
-    "serialport": "4.0.*",
+    "serialport": "^4.0.7",
     "suncalc": "^1.8.0"
   }
 }
