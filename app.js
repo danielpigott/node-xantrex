@@ -1,18 +1,25 @@
-var Xantrex = require("./lib/xantrex.js").Xantrex;
-var schedule = require('node-schedule');
-var SunCalc = require('suncalc');
-var axios = require('axios');
+const Xantrex = require("./lib/xantrex.js").Xantrex;
+const schedule = require('node-schedule');
+const SunCalc = require('suncalc');
+const axios = require('axios');
 const isBefore = require('date-fns/is_before');
-const isAfter = require('date-fns/is_after')
-let times ={};
+const isAfter = require('date-fns/is_after');
+const isSameDay = require('date-fns/is_same_day');
+let times = {};
+let lastReading = {
+  date: new Date()
+};
 
+const api = axios.create({
+  baseURL: process.env.XANTREX_STORE_URL,
+  timeout: 1000,
+});
 /**
  * Get sunrise and sunset times
  */
 function updateTimes() {
   times = SunCalc.getTimes(new Date(), -37, 144);
   console.log('Updating times');
-  console.log(times);
 }
 
 /**
@@ -23,20 +30,33 @@ function performReading() {
   if (isAfter(now, times.sunset)) {
     console.log('Sun has set');
   }
-  else if(isBefore(now, times.sunrise)) {
+  else if (isBefore(now, times.sunrise)) {
     console.log('Before sunrise');
   } else {
+
     console.log('Getting reading');
     let xantrex = new Xantrex("/dev/ttyUSB0", 9600);
     xantrex.connect().then(
-      function(connected) {
+      function () {
         xantrex.getSummary().then(
-          function(kwh) {
-            console.log(kwh);
-            xantrex.disconnect();
+          function (result) {
+            console.log(result);
+            if (!isSameDay(now, lastReading.date)) {
+              if (result.kwhtoday > 0.5) {
+                console.log('Skipping yesterday\'s reading');
+              }
+            } else {
+              lastReading = {
+                date: new Date(),
+                reading: result
+              };
+              api.post('/sensors-xantrex/reading/', result);
+              xantrex.disconnect();
+            }
           });
-      });
-
+      }).catch(function (error) {
+      console.log(error);
+    });
   }
 }
 
@@ -48,4 +68,4 @@ performReading();
 
 const updateTimesSchedule = schedule.scheduleJob('0 0 * * *', updateTimes);
 
-var j = schedule.scheduleJob('* * * * *', performReading);
+const j = schedule.scheduleJob('* * * * *', performReading);
