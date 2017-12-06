@@ -1,3 +1,4 @@
+const _ = require('lodash');
 const Xantrex = require("./lib/xantrex.js").Xantrex;
 const schedule = require('node-schedule');
 const SunCalc = require('suncalc');
@@ -5,6 +6,7 @@ const axios = require('axios');
 const isBefore = require('date-fns/is_before');
 const isAfter = require('date-fns/is_after');
 const isSameDay = require('date-fns/is_same_day');
+const format = require('date-fns/format');
 let times = {};
 let lastReading = {
   date: new Date()
@@ -14,6 +16,7 @@ const api = axios.create({
   baseURL: process.env.XANTREX_STORE_URL,
   timeout: 1000,
 });
+
 /**
  * Get sunrise and sunset times
  */
@@ -33,7 +36,6 @@ function performReading() {
   else if (isBefore(now, times.sunrise)) {
     console.log('Before sunrise');
   } else {
-
     console.log('Getting reading');
     let xantrex = new Xantrex("/dev/ttyUSB0", 9600);
     xantrex.connect().then(
@@ -47,10 +49,13 @@ function performReading() {
               }
             } else {
               lastReading = {
-                date: new Date(),
+                date: now,
                 reading: result
               };
-              api.post('/sensors-xantrex/reading/', result);
+              api.post(
+                '/sensors-xantrex/reading/',
+                _.extend(result, {timestamp: format(now)})
+              );
               xantrex.disconnect();
             }
           });
