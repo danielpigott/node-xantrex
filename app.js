@@ -44,6 +44,7 @@ function performReading() {
           function (result) {
             console.log(result);
             if (!isSameDay(now, lastReading.date)) {
+		    console.log(lastReading);
               if (result.kwhtoday > 0.5) {
                 console.log('Skipping yesterday\'s reading');
               }
@@ -56,8 +57,8 @@ function performReading() {
                 '/sensors-xantrex/reading/',
                 _.extend(result, {timestamp: format(now)})
               );
-              xantrex.disconnect();
             }
+	    xantrex.disconnect();
           });
       }).catch(function (error) {
       console.log(error);
