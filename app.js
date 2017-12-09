@@ -47,9 +47,8 @@ function performReading() {
       function () {
         xantrex.getSummary().then(
           function (result) {
-            log(result);
+            log('Reading:' + JSON.stringify(result));
             if (!isSameDay(now, lastReading.date)) {
-		    log(lastReading);
               if (result.kwhtoday > 0.5) {
                 log('Skipping yesterday\'s reading');
               }
@@ -66,7 +65,7 @@ function performReading() {
 	    xantrex.disconnect();
           });
       }).catch(function (error) {
-      log(error);
+      log(JSON.stringify(error));
     });
   }
 }
