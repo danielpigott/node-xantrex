@@ -23,7 +23,7 @@ function log(message) {
 }
 
 /**
- * Get sunrise and sunset times
+ * Load sunrise and sunset times
  */
 function updateTimes() {
   times = SunCalc.getTimes(new Date(), -37, 144);
@@ -31,14 +31,21 @@ function updateTimes() {
 }
 
 /**
+ * Get sunrise and sunset times
+ */
+function getTimes() {
+  return times;
+}
+
+/**
  * Read from the inverter
  */
 function performReading() {
   let now = new Date();
-  if (isAfter(now, times.sunset)) {
+  if (isAfter(now, getTimes().sunset)) {
     log('Sun has set');
   }
-  else if (isBefore(now, times.sunrise)) {
+  else if (isBefore(now, getTimes().sunrise)) {
     log('Before sunrise');
   } else {
     log('Getting reading');
@@ -76,6 +83,6 @@ function performReading() {
 updateTimes();
 performReading();
 
-const updateTimesSchedule = schedule.scheduleJob('updateTimes', '0 0 * * *', updateTimes);
+const updateTimesSchedule = schedule.scheduleJob('updateTimes', '0 1 * * *', updateTimes);
 
 const j = schedule.scheduleJob('performReading', '* * * * *', performReading);
