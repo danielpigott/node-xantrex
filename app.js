@@ -6,6 +6,7 @@ const axios = require('axios');
 const isBefore = require('date-fns/is_before');
 const isAfter = require('date-fns/is_after');
 const isSameDay = require('date-fns/is_same_day');
+const differenceInSeconds = require('date-fns/difference_in_seconds')
 const formatDate = require('date-fns/format');
 let times = {};
 let lastReading = {
@@ -26,26 +27,35 @@ function log(message) {
  * Load sunrise and sunset times
  */
 function updateTimes() {
-  times = SunCalc.getTimes(new Date(), -37, 144);
+  let now = new Date();
+  times = _.extend(SunCalc.getTimes(now, -37, 144), {timestamp:now});
   log('Updating times');
 }
 
-/**
- * Get sunrise and sunset times
- */
-function getTimes() {
-  return times;
+function setLastReading(reading) {
+  let now = new Date();
+  _.extend(
+      lastReading,
+      {
+	date: now,
+	reading: reading
+      });
+
 }
 
 /**
  * Read from the inverter
  */
-function performReading() {
+function performReading(lastReading, times) {
   let now = new Date();
-  if (isAfter(now, getTimes().sunset)) {
+  log(differenceInSeconds(now, times.sunset));
+  log('last updated: ' + formatDate(times.timestamp));
+  log('now: ' + formatDate(now));
+  log('sunset: ' + formatDate(times.sunset));
+  log('last reading time: ' + formatDate(lastReading.date));
+  if (isAfter(now, times.sunset)) {
     log('Sun has set');
-  }
-  else if (isBefore(now, getTimes().sunrise)) {
+  } else if (isBefore(now, times.sunrise)) {
     log('Before sunrise');
   } else {
     log('Getting reading');
@@ -55,24 +65,26 @@ function performReading() {
         xantrex.getSummary().then(
           function (result) {
             log('Reading:' + JSON.stringify(result));
-            if (!isSameDay(now, lastReading.date)) {
-              if (result.kwhtoday > 0.5) {
+            if (!isSameDay(now, lastReading.date) && 
+		    parseFloat(result.kwhtoday) > 0.5) {
                 log('Skipping yesterday\'s reading');
-              }
             } else {
-              lastReading = {
-                date: now,
-                reading: result
-              };
-              api.post(
+              let data = {
+		      timestamp: formatDate(now),
+		      reading: result
+	      };
+              setLastReading(result);
+		    console.log('Sending: ' + JSON.stringify(data));
+	      api.post(
                 '/sensors-xantrex/reading/',
-                _.extend(result, {timestamp: formatDate(now)})
+                data 
               );
             }
 	    xantrex.disconnect();
           });
-      }).catch(function (error) {
-      log(JSON.stringify(error));
+      }).fail(function (error) {
+	      log('Error:' . JSON.stringify(error));
+	      xantrex.disconnect();
     });
   }
 }
@@ -81,8 +93,6 @@ function performReading() {
  * init
  */
 updateTimes();
-performReading();
 
-const updateTimesSchedule = schedule.scheduleJob('updateTimes', '0 1 * * *', updateTimes);
-
-const j = schedule.scheduleJob('performReading', '* * * * *', performReading);
+const updateTimesSchedule = schedule.scheduleJob('updateTimes', '0 * * * *', updateTimes);
+const j = schedule.scheduleJob('performReading', '* * * * *', () => { performReading(lastReading, times);});
