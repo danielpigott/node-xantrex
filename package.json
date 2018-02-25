@@ -19,12 +19,13 @@
   },
   "preferGlobal": false,
   "dependencies": {
+    "aws-sdk": "^2.177.0",
     "axios": "^0.17.1",
     "date-fns": "^1.29.0",
     "lodash": "4.17.*",
     "node-schedule": "^1.2.5",
     "q": "1.0.*",
-    "serialport": "^4.0.7",
+    "serialport": "^6.0.4",
     "suncalc": "^1.8.0"
   }
 }

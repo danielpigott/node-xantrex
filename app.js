@@ -2,21 +2,24 @@ const _ = require('lodash');
 const Xantrex = require("./lib/xantrex.js").Xantrex;
 const schedule = require('node-schedule');
 const SunCalc = require('suncalc');
-const axios = require('axios');
 const isBefore = require('date-fns/is_before');
 const isAfter = require('date-fns/is_after');
 const isSameDay = require('date-fns/is_same_day');
 const differenceInSeconds = require('date-fns/difference_in_seconds')
 const formatDate = require('date-fns/format');
+// Load the AWS SDK for Node.js
+let AWS = require('aws-sdk');
+
+// Set the region
+AWS.config.update({region: process.env.AWS_REGION});
+
+let dynamoClient = new AWS.DynamoDB.DocumentClient();
+
 let times = {};
 let lastReading = {
   date: new Date()
 };
 
-const api = axios.create({
-  baseURL: process.env.XANTREX_STORE_URL,
-  timeout: 1000,
-});
 
 function log(message) {
   const now = new Date();
@@ -28,18 +31,18 @@ function log(message) {
  */
 function updateTimes() {
   let now = new Date();
-  times = _.extend(SunCalc.getTimes(now, -37, 144), {timestamp:now});
+  times = _.extend(SunCalc.getTimes(now, -37, 144), {timestamp: now});
   log('Updating times');
 }
 
 function setLastReading(reading) {
   let now = new Date();
   _.extend(
-      lastReading,
-      {
-	date: now,
-	reading: reading
-      });
+    lastReading,
+    {
+      date: now,
+      reading: reading
+    });
 
 }
 
@@ -65,26 +68,30 @@ function performReading(lastReading, times) {
         xantrex.getSummary().then(
           function (result) {
             log('Reading:' + JSON.stringify(result));
-            if (!isSameDay(now, lastReading.date) && 
-		    parseFloat(result.kwhtoday) > 0.5) {
-                log('Skipping yesterday\'s reading');
+            if (!isSameDay(now, lastReading.date) &&
+              parseFloat(result.kwhtoday) > 0.5) {
+              log('Skipping yesterday\'s reading');
             } else {
               let data = {
-		      timestamp: formatDate(now),
-		      reading: result
-	      };
+                'device_id': 'XANTREX0001',
+                timestamp: formatDate(now),
+                reading: result
+              };
               setLastReading(result);
-		    console.log('Sending: ' + JSON.stringify(data));
-	      api.post(
-                '/sensors-xantrex/reading/',
-                data 
-              );
+              console.log('Sending: ' + JSON.stringify(data));
+              dynamoClient.put(
+                {
+                  TableName: "sensors",
+                  Item: data
+                },
+                function (err, data) {
+                });
             }
-	    xantrex.disconnect();
+            xantrex.disconnect();
           });
       }).fail(function (error) {
-	      log('Error:' . JSON.stringify(error));
-	      xantrex.disconnect();
+      log('Error:'.JSON.stringify(error));
+      xantrex.disconnect();
     });
   }
 }
@@ -95,4 +102,6 @@ function performReading(lastReading, times) {
 updateTimes();
 
 const updateTimesSchedule = schedule.scheduleJob('updateTimes', '0 * * * *', updateTimes);
-const j = schedule.scheduleJob('performReading', '* * * * *', () => { performReading(lastReading, times);});
+const j = schedule.scheduleJob('performReading', '* * * * *', () => {
+  performReading(lastReading, times);
+});
