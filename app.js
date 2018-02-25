@@ -32,7 +32,6 @@ function log(message) {
 function updateTimes() {
   let now = new Date();
   times = _.extend(SunCalc.getTimes(now, -37, 144), {timestamp: now});
-  log('Updating times');
 }
 
 function setLastReading(reading) {
@@ -51,11 +50,6 @@ function setLastReading(reading) {
  */
 function performReading(lastReading, times) {
   let now = new Date();
-  log(differenceInSeconds(now, times.sunset));
-  log('last updated: ' + formatDate(times.timestamp));
-  log('now: ' + formatDate(now));
-  log('sunset: ' + formatDate(times.sunset));
-  log('last reading time: ' + formatDate(lastReading.date));
   if (isAfter(now, times.sunset)) {
     log('Sun has set');
   } else if (isBefore(now, times.sunrise)) {
@@ -67,7 +61,6 @@ function performReading(lastReading, times) {
       function () {
         xantrex.getSummary().then(
           function (result) {
-            log('Reading:' + JSON.stringify(result));
             if (!isSameDay(now, lastReading.date) &&
               parseFloat(result.kwhtoday) > 0.5) {
               log('Skipping yesterday\'s reading');
@@ -78,7 +71,7 @@ function performReading(lastReading, times) {
                 reading: result
               };
               setLastReading(result);
-              console.log('Sending: ' + JSON.stringify(data));
+              console.log('Sending reading');
               dynamoClient.put(
                 {
                   TableName: "sensors",
@@ -90,8 +83,8 @@ function performReading(lastReading, times) {
             xantrex.disconnect();
           });
       }).fail(function (error) {
-      log('Error:'.JSON.stringify(error));
-      xantrex.disconnect();
+        log('Error:'.JSON.stringify(error));
+        xantrex.disconnect();
     });
   }
 }
