@@ -5,21 +5,21 @@ const SunCalc = require('suncalc');
 const isBefore = require('date-fns/is_before');
 const isAfter = require('date-fns/is_after');
 const isSameDay = require('date-fns/is_same_day');
-const differenceInSeconds = require('date-fns/difference_in_seconds')
 const formatDate = require('date-fns/format');
 // Load the AWS SDK for Node.js
 let AWS = require('aws-sdk');
 
 // Set the region
 AWS.config.update({region: process.env.AWS_REGION});
+AWS.config.loadFromPath('./config.json');
 
 let dynamoClient = new AWS.DynamoDB.DocumentClient();
+
 
 let times = {};
 let lastReading = {
   date: new Date()
 };
-
 
 function log(message) {
   const now = new Date();
@@ -83,8 +83,8 @@ function performReading(lastReading, times) {
             xantrex.disconnect();
           });
       }).fail(function (error) {
-        log('Error:'.JSON.stringify(error));
-        xantrex.disconnect();
+      log('Error:'.JSON.stringify(error));
+      xantrex.disconnect();
     });
   }
 }
